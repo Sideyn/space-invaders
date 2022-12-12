@@ -28,11 +28,21 @@ class Player {
 
   draw() {
     c.fillStyle = "white";
-    c.fillRect(this.position.x, this.position, this.width, this.height);
+    c.fillRect(this.position.x, this.position.y, this.width, this.height);
   }
 
   // A chaque mise à jour on dessine de nouveau le joueur
   update() {
+    if (keys.ArrowLeft.pressed && this.position.x >= 0) {
+      this.velocity.x = -5;
+    } else if (
+      keys.ArrowRight.pressed &&
+      this.position.x <= world.width - this.width
+    ) {
+      this.velocity.x = 5;
+    } else {
+      this.velocity.x = 0;
+    }
     this.position.x += this.velocity.x;
     this.draw();
   }
@@ -43,8 +53,37 @@ const player = new Player();
 // Boucle d'animation
 const animationLoop = () => {
   requestAnimationFrame(animationLoop);
+  c.clearRect(0, 0, world.width, world.height);
   player.update();
   frames++;
 };
 
 animationLoop();
+
+// Gére les mouvements de gauche à droite
+addEventListener("keydown", ({ key }) => {
+  switch (key) {
+    case "ArrowLeft":
+      keys.ArrowLeft.pressed = true;
+      console.log("gauche");
+      break;
+    case "ArrowRight":
+      keys.ArrowRight.pressed = true;
+      console.log("droite");
+      break;
+  }
+});
+
+// Réinitialise le booléen lorsque l'on appuie sur une touche
+addEventListener("keyup", (event) => {
+  switch (event.key) {
+    case "ArrowLeft":
+      keys.ArrowLeft.pressed = false;
+      console.log("gauche");
+      break;
+    case "ArrowRight":
+      keys.ArrowRight.pressed = false;
+      console.log("droite");
+      break;
+  }
+});
