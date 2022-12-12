@@ -25,12 +25,29 @@ class Player {
       x: (world.width - this.width) / 2, // Centre le joueur
       y: world.height - this.height, // Place le joueur en bas
     };
+
+    const image = new Image();
+    image.src = "./assets/vaisseau.png";
+    image.onload = () => {
+      this.image = image;
+      this.width = 48;
+      this.height = 48;
+      this.position = {
+        x: world.width / 2 - this.width / 2,
+        y: world.height - this.height - 10,
+      };
+    };
   }
 
-  // Dessine le joueur/carré (vaisseau)
+  // Dessine l'image du vaisseau
   draw() {
-    c.fillStyle = "white";
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    c.drawImage(
+      this.image,
+      this.position.x,
+      this.position.y,
+      this.width,
+      this.height
+    );
   }
 
   // Permet au joueur de tirer
@@ -47,33 +64,48 @@ class Player {
 
   // A chaque mise à jour on dessine de nouveau le joueur
   update() {
-    if (keys.ArrowLeft.pressed && this.position.x >= 0) {
-      this.velocity.x = -5;
-    } else if (
-      keys.ArrowRight.pressed &&
-      this.position.x <= world.width - this.width
-    ) {
-      this.velocity.x = 5;
-    } else {
-      this.velocity.x = 0;
+    if (this.image) {
+      if (keys.ArrowLeft.pressed && this.position.x >= 0) {
+        this.velocity.x = -5;
+      } else if (
+        keys.ArrowRight.pressed &&
+        this.position.x <= world.width - this.width
+      ) {
+        this.velocity.x = 5;
+      } else {
+        this.velocity.x = 0;
+      }
+
+      this.position.x += this.velocity.x;
+      this.draw();
     }
-    
-    this.position.x += this.velocity.x;
-    this.draw();
   }
 }
 
 class Missile {
   constructor({ position }) {
     this.position = position;
-    this.velocity = { x: 0, y: -5 };
+    this.velocity = { x: 0, y: -4 };
     this.width = 3;
     this.height = 10;
+
+    const image = new Image();
+    image.src = "./assets/missile.png";
+    image.onload = () => {
+      this.image = image;
+      this.width = 24;
+      this.height = 24;
+    };
   }
 
   draw() {
-    c.fillStyle = "red";
-    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    c.drawImage(
+      this.image,
+      this.position.x,
+      this.position.y,
+      this.width,
+      this.height
+    );
   }
 
   update() {
