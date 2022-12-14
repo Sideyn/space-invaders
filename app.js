@@ -171,15 +171,15 @@ class Missile {
 }
 
 class alienMissile {
-  constructor({ position }) {
+  constructor({ position, velocity }) {
     this.position = position;
-    this.velocity = { x: 0, y: -4 };
-    this.width = 3;
+    this.velocity = velocity;
+    this.width = 5;
     this.height = 10;
   }
 
   draw() {
-    c.fillStyle = "green";
+    c.fillStyle = "yellow";
     c.fillRect(this.position.x, this.position.y, this.width, this.height);
     c.fill();
   }
@@ -226,6 +226,7 @@ class Grid {
 }
 
 const missiles = [];
+const alienMissiles = [];
 let grids = [new Grid()];
 const player = new Player();
 let particules = [];
@@ -248,9 +249,26 @@ const animationLoop = () => {
 
   grids.forEach((grid) => {
     grid.update();
+    if (frames % 80 === 0 && grid.invaders.length > 0) {
+      grid.invaders[Math.floor(Math.random() * grid.invaders.length)].shoot(
+        alienMissiles
+      );
+      console.log(alienMissile);
+    }
+
     grid.invaders.forEach((invader) => {
       invader.update({ velocity: grid.velocity });
     });
+  });
+
+  alienMissiles.forEach((alienMissile, index) => {
+    if (alienMissile.position.y + alienMissile.height >= world.height) {
+      setTimeout(() => {
+        alienMissiles.splice(index, 1);
+      }, 0);
+    } else {
+      alienMissile.update();
+    }
   });
 
   frames++;
