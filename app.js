@@ -5,7 +5,6 @@ world.width = world.clientWidth; // Définis la largeur du monde en fonction du 
 world.height = world.clientHeight; // Définis la hauteur du monde en fonction du client
 
 let frames = 0; // Stock l'itération actuelle
-const missiles = [];
 
 // Stock l'état des touches claviers
 const keys = {
@@ -82,6 +81,63 @@ class Player {
   }
 }
 
+class Alien {
+  constructor({ position }) {
+    this.velocity = { x: 0, y: 0 };
+    const image = new Image();
+    image.src = "./assets/ennemi.png";
+    image.onload = () => {
+      this.image = image;
+      this.width = 32;
+      this.height = 32;
+      this.position = {
+        x: position.x,
+        y: position.y,
+      };
+    };
+  }
+
+  draw() {
+    if (this.image) {
+      c.drawImage(
+        this.image,
+        this.position.x,
+        this.position.y,
+        this.width,
+        this.height
+      );
+    }
+  }
+
+  update({ velocity }) {
+    if (this.image) {
+      this.position.x += velocity.x;
+      this.position.y += velocity.y;
+      if (this.position.y + this.height >= world.height) {
+        console.log("You loose");
+      }
+    }
+    this.draw();
+  }
+
+  shoot(alienMissiles) {
+    if (this.position) {
+      alienMissiles.push(
+        new alienMissile({
+          position: {
+            x: this.position.x,
+            y: this.position.y,
+          },
+          velocity: {
+            x: 0,
+            y: 3,
+          },
+        })
+      );
+    }
+  }
+}
+
 class Missile {
   constructor({ position }) {
     this.position = position;
@@ -114,14 +170,72 @@ class Missile {
   }
 }
 
+class alienMissile {
+  constructor({ position, velocity }) {
+    this.position = position;
+    this.velocity = velocity;
+    this.width = 5;
+    this.height = 10;
+  }
+
+  draw() {
+    c.fillStyle = "yellow";
+    c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    c.fill();
+  }
+
+  update() {
+    this.position.x += this.velocity.x;
+    this.position.y += this.velocity.y;
+    this.draw();
+  }
+}
+
+class Grid {
+  constructor() {
+    this.position = { x: 0, y: 0 };
+    this.velocity = { x: 1, y: 0 };
+    this.invaders = [];
+    let rows = Math.floor((world.height / 34) * (1 / 3));
+    const columns = Math.floor((world.width / 34) * (2 / 3));
+    this.height = rows * 34;
+    this.width = columns * 34;
+    for (let x = 0; x < columns; x++) {
+      for (let y = 0; y < rows; y++) {
+        this.invaders.push(
+          new Alien({
+            position: {
+              x: x * 34,
+              y: y * 34,
+            },
+          })
+        );
+      }
+    }
+  }
+
+  update() {
+    this.position.x += this.velocity.x;
+    this.position.y += this.velocity.y;
+    this.velocity.y = 0;
+    if (this.position.x + this.width >= world.width || this.position.x == 0) {
+      this.velocity.x = -this.velocity.x;
+      this.velocity.y = 34;
+    }
+  }
+}
+
+const missiles = [];
+const alienMissiles = [];
+let grids = [new Grid()];
 const player = new Player();
+let particules = [];
 
 // Boucle d'animation
 const animationLoop = () => {
-  requestAnimationFrame(animationLoop);
   c.clearRect(0, 0, world.width, world.height);
-
   player.update();
+  requestAnimationFrame(animationLoop);
 
   missiles.forEach((missile, index) => {
     if (missile.position.y + missile.height <= 0) {
@@ -130,6 +244,30 @@ const animationLoop = () => {
       }, 0);
     } else {
       missile.update();
+    }
+  });
+
+  grids.forEach((grid) => {
+    grid.update();
+    if (frames % 80 === 0 && grid.invaders.length > 0) {
+      grid.invaders[Math.floor(Math.random() * grid.invaders.length)].shoot(
+        alienMissiles
+      );
+      console.log(alienMissile);
+    }
+
+    grid.invaders.forEach((invader) => {
+      invader.update({ velocity: grid.velocity });
+    });
+  });
+
+  alienMissiles.forEach((alienMissile, index) => {
+    if (alienMissile.position.y + alienMissile.height >= world.height) {
+      setTimeout(() => {
+        alienMissiles.splice(index, 1);
+      }, 0);
+    } else {
+      alienMissile.update();
     }
   });
 
