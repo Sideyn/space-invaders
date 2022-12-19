@@ -12,6 +12,7 @@ const keys = {
   ArrowRight: { pressed: false },
 };
 
+// Crée un joueur
 class Player {
   constructor() {
     this.width = 32; // Largeur du joueur
@@ -25,6 +26,7 @@ class Player {
       y: world.height - this.height, // Place le joueur en bas
     };
 
+    // Ajoute l'image du vaisseau
     const image = new Image();
     image.src = "./assets/vaisseau.png";
     image.onload = () => {
@@ -81,6 +83,7 @@ class Player {
   }
 }
 
+// Crée un alien
 class Alien {
   constructor({ position }) {
     this.velocity = { x: 0, y: 0 };
@@ -138,6 +141,7 @@ class Alien {
   }
 }
 
+// La classe Missile crée un missile pour le joueur avec une position, une vitesse, une taille et une image.
 class Missile {
   constructor({ position }) {
     this.position = position;
@@ -168,6 +172,7 @@ class Missile {
   }
 }
 
+// La classe alienMissile crée un missile ennemi avec une position, une vitesse, une taille et une couleur.
 class alienMissile {
   constructor({ position, velocity }) {
     this.position = position;
@@ -189,6 +194,7 @@ class alienMissile {
   }
 }
 
+// La classe Grid est un conteneur pour la classe Alien, et elle est utilisée pour créer une grille d'aliens.
 class Grid {
   constructor() {
     this.position = { x: 0, y: 0 };
@@ -223,6 +229,7 @@ class Grid {
   }
 }
 
+// Il crée un cercle avec une position, une vitesse, un rayon, une couleur et une opacité
 class Particule {
   constructor({ position, velocity, radius, color }) {
     this.position = position;
@@ -253,11 +260,26 @@ class Particule {
   }
 }
 
-const missiles = [];
-const alienMissiles = [];
-let grids = [new Grid()];
-const player = new Player();
-let particules = [];
+let missiles;
+let alienMissiles;
+let grids;
+let player;
+let particules;
+let lifes;
+
+// Elle crée une nouvelle grille, un nouveau joueur, et fixe le nombre de vies à 3.
+const init = () => {
+  missiles = [];
+  alienMissiles = [];
+  grids = [new Grid()];
+  player = new Player();
+  particules = [];
+  lifes = 3;
+  keys.ArrowLeft.pressed = false;
+  keys.ArrowRight.pressed = false;
+};
+
+init();
 
 // Boucle d'animation
 const animationLoop = () => {
@@ -265,6 +287,7 @@ const animationLoop = () => {
   player.update();
   requestAnimationFrame(animationLoop);
 
+  // Vérifie si le missile est hors du canevas et si c'est le cas, il le supprime du tableau.
   missiles.forEach((missile, index) => {
     if (missile.position.y + missile.height <= 0) {
       setTimeout(() => {
@@ -275,6 +298,8 @@ const animationLoop = () => {
     }
   });
 
+  // Il s'agit d'une boucle forEach qui parcourt le tableau des grilles. Elle met à jour la grille et ensuite  vérifie si les images sont divisibles par 150
+  // et si la longueur des ennemis de la grille est supérieure à 0. Si c'est le cas, il tire un missile.
   grids.forEach((grid, indexGrid) => {
     grid.update();
     if (frames % 150 === 0 && grid.invaders.length > 0) {
@@ -283,6 +308,7 @@ const animationLoop = () => {
       );
     }
 
+    // Check si le missile touche l'ennemi :
     grid.invaders.forEach((invader, indexI) => {
       invader.update({ velocity: grid.velocity });
       missiles.forEach((missile, indexM) => {
@@ -313,16 +339,20 @@ const animationLoop = () => {
             grid.invaders.splice(indexI, 1);
 
             missiles.splice(indexM, 1);
-            // if (grid.invaders.length === 0 && grids.length == 1) {
-            //   grids.splice(indexGrid, 1);
-            //   grids.push(new Grid());
-            // }
+            if (grid.invaders.length === 0 && grids.length == 1) {
+              grids.splice(indexGrid, 1);
+              grids.push(new Grid());
+            }
           }, 0);
         }
       });
     });
   });
 
+  // Check si le missile touche le joueur :
+
+  // Vérifie si le missile alien est sorti du tableau. Si c'est le cas, il le supprime du tableau. Si ce n'est pas le cas,
+  // il le met à jour.
   alienMissiles.forEach((alienMissile, index) => {
     if (alienMissile.position.y + alienMissile.height >= world.height) {
       setTimeout(() => {
@@ -332,6 +362,8 @@ const animationLoop = () => {
       alienMissile.update();
     }
 
+    // Vérifie si le missile alien touche le joueur. Si c'est le cas, il retire le missile du tableau, crée des particules et retire une vie du
+    // tableau, crée des particules et enlève une vie.
     if (
       alienMissile.position.y <= player.position.y + player.height &&
       alienMissile.position.y >= player.position.y &&
@@ -360,6 +392,7 @@ const animationLoop = () => {
     }
   });
 
+  // Suppression des particules du tableau lorsqu'elles ne sont plus visibles.
   particules.forEach((particule, index) => {
     if (particule.opacity <= 0) {
       particules.splice(index, 1);
@@ -373,7 +406,16 @@ const animationLoop = () => {
 
 animationLoop();
 
-// Gére les mouvements de gauche à droite
+// Diminue le nombre de vie jusqu'a la défaite
+const lostLife = () => {
+  lifes--;
+  if (lifes <= 0) {
+    alert("Perdu");
+    init();
+  }
+};
+
+// Écoute de l'événement keydown et définition de la propriété pressed de l'objet keys à true.
 addEventListener("keydown", ({ key }) => {
   switch (key) {
     case "ArrowLeft":
@@ -387,7 +429,8 @@ addEventListener("keydown", ({ key }) => {
   }
 });
 
-// Réinitialise le booléen lorsque l'on appuie sur une touche
+// Écoute de l'événement keyup et définition de la propriété pressed de l'objet keys à false. Afin de permettre d'alterner gauche droite
+// sans que le joueur reste bloqué sur une des positions
 addEventListener("keyup", (event) => {
   switch (event.key) {
     case "ArrowLeft":
