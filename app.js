@@ -1,15 +1,16 @@
 const world = document.querySelector("#gameBoard"); // Représente le monde du jeu
 const c = world.getContext("2d"); // Récupére le contexte du canvas
 
-world.width = world.clientWidth; // Définis la largeur du monde en fonction du client
-world.height = world.clientHeight; // Définis la hauteur du monde en fonction du client
+world.width = innerWidth; // Définis la largeur du monde en fonction du client
+world.height = innerHeight; // Définis la hauteur du monde en fonction du client
 
 let frames = 0; // Stock l'itération actuelle
 
 // Stock l'état des touches claviers
 const keys = {
-  ArrowLeft: { pressed: false },
-  ArrowRight: { pressed: false },
+  q: { pressed: false },
+  d: { pressed: false },
+  space: { pressed: false },
 };
 
 // Crée un joueur
@@ -25,23 +26,38 @@ class Player {
       x: (world.width - this.width) / 2, // Centre le joueur
       y: world.height - this.height, // Place le joueur en bas
     };
+    this.rotation = 0;
 
     // Ajoute l'image du vaisseau
     const image = new Image();
     image.src = "./assets/vaisseau.png";
     image.onload = () => {
+      const scale = 1.5;
       this.image = image;
-      this.width = 48;
-      this.height = 48;
+      this.width = image.width * scale;
+      this.height = image.height * scale;
       this.position = {
         x: world.width / 2 - this.width / 2,
-        y: world.height - this.height - 10,
+        y: world.height - this.height - 2,
       };
     };
   }
 
   // Dessine l'image du vaisseau
   draw() {
+    c.save();
+    c.translate(
+      player.position.x + player.width / 2,
+      player.position.y + player.height / 2
+    );
+
+    c.rotate(this.rotation);
+
+    c.translate(
+      -player.position.x - player.width / 2,
+      -player.position.y - player.height / 2
+    );
+
     c.drawImage(
       this.image,
       this.position.x,
@@ -49,6 +65,7 @@ class Player {
       this.width,
       this.height
     );
+    c.restore();
   }
 
   // Permet au joueur de tirer
@@ -66,15 +83,16 @@ class Player {
   // A chaque mise à jour on dessine de nouveau le joueur
   update() {
     if (this.image) {
-      if (keys.ArrowLeft.pressed && this.position.x >= 0) {
-        this.velocity.x = -5;
+      if (keys.q.pressed && this.position.x >= 0) {
+        this.velocity.x = -4;
       } else if (
-        keys.ArrowRight.pressed &&
+        keys.d.pressed &&
         this.position.x <= world.width - this.width
       ) {
-        this.velocity.x = 5;
+        this.velocity.x = 4;
       } else {
         this.velocity.x = 0;
+        this.rotation = 0;
       }
 
       this.position.x += this.velocity.x;
@@ -116,9 +134,6 @@ class Alien {
     if (this.image) {
       this.position.x += velocity.x;
       this.position.y += velocity.y;
-      if (this.position.y + this.height >= world.height) {
-        console.log("You loose");
-      }
     }
     this.draw();
   }
@@ -275,17 +290,17 @@ const init = () => {
   player = new Player();
   particules = [];
   lifes = 3;
-  keys.ArrowLeft.pressed = false;
-  keys.ArrowRight.pressed = false;
+  keys.q.pressed = false;
+  keys.d.pressed = false;
 };
 
 init();
 
 // Boucle d'animation
 const animationLoop = () => {
+  requestAnimationFrame(animationLoop);
   c.clearRect(0, 0, world.width, world.height);
   player.update();
-  requestAnimationFrame(animationLoop);
 
   // Vérifie si le missile est hors du canevas et si c'est le cas, il le supprime du tableau.
   missiles.forEach((missile, index) => {
@@ -368,7 +383,7 @@ const animationLoop = () => {
       alienMissile.position.y <= player.position.y + player.height &&
       alienMissile.position.y >= player.position.y &&
       alienMissile.position.x + alienMissile.width >= player.position.x &&
-      alienMissile.position.x - alienMissile.width <=
+      alienMissile.position.x - alienMissile.width <
         player.position.x + player.width
     ) {
       alienMissiles.splice(index, 1);
@@ -418,13 +433,14 @@ const lostLife = () => {
 // Écoute de l'événement keydown et définition de la propriété pressed de l'objet keys à true.
 addEventListener("keydown", ({ key }) => {
   switch (key) {
-    case "ArrowLeft":
-      keys.ArrowLeft.pressed = true;
-      console.log("gauche");
+    case "q":
+      keys.q.pressed = true;
+      player.velocity.x = -5;
+      player.rotation = -0.15;
       break;
-    case "ArrowRight":
-      keys.ArrowRight.pressed = true;
-      console.log("droite");
+    case "d":
+      keys.d.pressed = true;
+      player.rotation = 0.15;
       break;
   }
 });
@@ -433,16 +449,13 @@ addEventListener("keydown", ({ key }) => {
 // sans que le joueur reste bloqué sur une des positions
 addEventListener("keyup", (event) => {
   switch (event.key) {
-    case "ArrowLeft":
-      keys.ArrowLeft.pressed = false;
-      console.log("gauche");
+    case "q":
+      keys.q.pressed = false;
       break;
-    case "ArrowRight":
-      keys.ArrowRight.pressed = false;
-      console.log("droite");
+    case "d":
+      keys.d.pressed = false;
       break;
     case " ":
       player.shoot();
-      console.log(missiles);
   }
 });
