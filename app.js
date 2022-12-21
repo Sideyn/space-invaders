@@ -5,6 +5,8 @@ world.width = innerWidth; // Définis la largeur du monde en fonction du client
 world.height = innerHeight; // Définis la hauteur du monde en fonction du client
 
 let frames = 0; // Stock l'itération actuelle
+let randomInterval = Math.random() * 500 + 500; //Génération d'un nombre aléatoire entre 500 et 1000.
+console.log(randomInterval);
 
 // Stock l'état des touches claviers
 const keys = {
@@ -38,7 +40,7 @@ class Player {
       this.height = image.height * scale;
       this.position = {
         x: world.width / 2 - this.width / 2,
-        y: world.height - this.height - 2,
+        y: world.height - this.height - 20,
       };
     };
   }
@@ -76,6 +78,10 @@ class Player {
           x: this.position.x + this.width / 2,
           y: this.position.y,
         },
+        velocity: {
+          x: 0,
+          y: -5,
+        },
       })
     );
   }
@@ -108,9 +114,10 @@ class Alien {
     const image = new Image();
     image.src = "./assets/ennemi.png";
     image.onload = () => {
+      const scale = 1;
       this.image = image;
-      this.width = 32;
-      this.height = 32;
+      this.width = image.width * scale;
+      this.height = image.height * scale;
       this.position = {
         x: position.x,
         y: position.y,
@@ -158,27 +165,18 @@ class Alien {
 
 // La classe Missile crée un missile pour le joueur avec une position, une vitesse, une taille et une image.
 class Missile {
-  constructor({ position }) {
+  constructor({ position, velocity }) {
     this.position = position;
-    this.velocity = { x: 0, y: -5 };
-    this.width = 3;
-    this.height = 10;
-
-    const image = new Image();
-    image.src = "./assets/missile.png";
-    image.onload = () => {
-      this.image = image;
-    };
+    this.velocity = velocity;
+    this.radius = 3;
   }
 
   draw() {
-    c.drawImage(
-      this.image,
-      this.position.x,
-      this.position.y,
-      this.width,
-      this.height
-    );
+    c.beginPath();
+    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+    c.fillStyle = "grey";
+    c.fill();
+    c.closePath;
   }
 
   update() {
@@ -215,17 +213,17 @@ class Grid {
     this.position = { x: 0, y: 0 };
     this.velocity = { x: 1, y: 0 };
     this.invaders = [];
-    let rows = Math.floor((world.height / 34) * (1 / 5));
-    const colums = Math.floor((world.width / 34) * (2 / 5));
-    this.height = rows * 34;
-    this.width = colums * 34;
+    let rows = Math.floor(Math.random() * 10 + 5);
+    const colums = Math.floor(Math.random() * 5 + 2);
+    this.height = rows * 30;
+    this.width = colums * 30;
     for (let x = 0; x < colums; x++) {
       for (let y = 0; y < rows; y++) {
         this.invaders.push(
           new Alien({
             position: {
-              x: x * 34,
-              y: y * 34,
+              x: x * 30,
+              y: y * 30,
             },
           })
         );
@@ -239,7 +237,7 @@ class Grid {
     this.velocity.y = 0;
     if (this.position.x + this.width >= world.width || this.position.x == 0) {
       this.velocity.x = -this.velocity.x;
-      this.velocity.y = 34;
+      this.velocity.y = 30;
     }
   }
 }
@@ -304,7 +302,7 @@ const animationLoop = () => {
 
   // Vérifie si le missile est hors du canevas et si c'est le cas, il le supprime du tableau.
   missiles.forEach((missile, index) => {
-    if (missile.position.y + missile.height <= 0) {
+    if (missile.position.y + missile.radius <= 0) {
       setTimeout(() => {
         missiles.splice(index, 1);
       }, 0);
@@ -317,7 +315,7 @@ const animationLoop = () => {
   // et si la longueur des ennemis de la grille est supérieure à 0. Si c'est le cas, il tire un missile.
   grids.forEach((grid, indexGrid) => {
     grid.update();
-    if (frames % 150 === 0 && grid.invaders.length > 0) {
+    if (frames % 300 === 0 && grid.invaders.length > 0) {
       grid.invaders[Math.floor(Math.random() * grid.invaders.length)].shoot(
         alienMissiles
       );
@@ -328,11 +326,12 @@ const animationLoop = () => {
       invader.update({ velocity: grid.velocity });
       missiles.forEach((missile, indexM) => {
         if (
-          missile.position.y <= invader.position.y + invader.height &&
-          missile.position.y >= invader.position.y &&
-          missile.position.x + missile.width >= invader.position.x &&
-          missile.position.x - missile.width <=
-            invader.position.x + invader.width
+          missile.position.y - missile.radius <=
+            invader.position.y + invader.height &&
+          missile.position.x + missile.radius >= invader.position.x &&
+          missile.position.x - missile.radius <=
+            invader.position.x + invader.width &&
+          missile.position.y + missile.radius >= invader.position.y
         ) {
           for (let i = 0; i < 12; i++) {
             particules.push(
@@ -351,9 +350,17 @@ const animationLoop = () => {
             );
           }
           setTimeout(() => {
-            grid.invaders.splice(indexI, 1);
+            const invaderFound = grid.invaders.find(
+              (invader2) => invader2 === invader
+            );
+            const missileFound = missiles.find(
+              (missile2) => missile2 === missile
+            );
+            if (invaderFound && missileFound) {
+              grid.invaders.splice(indexI, 1);
+              missiles.splice(indexM, 1);
+            }
 
-            missiles.splice(indexM, 1);
             if (grid.invaders.length === 0 && grids.length == 1) {
               grids.splice(indexGrid, 1);
               grids.push(new Grid());
@@ -406,6 +413,14 @@ const animationLoop = () => {
       lostLife();
     }
   });
+
+  console.log(frames);
+  if (frames % randomInterval === 0) {
+    grids.push(new Grid());
+    randomInterval = Math.floor(Math.random() * 2000 + 500);
+    frames = 0;
+    console.log(randomInterval);
+  }
 
   // Suppression des particules du tableau lorsqu'elles ne sont plus visibles.
   particules.forEach((particule, index) => {
