@@ -244,12 +244,13 @@ class Grid {
 
 // Il crée un cercle avec une position, une vitesse, un rayon, une couleur et une opacité
 class Particule {
-  constructor({ position, velocity, radius, color }) {
+  constructor({ position, velocity, radius, color, fades }) {
     this.position = position;
     this.velocity = velocity;
     this.radius = radius;
     this.color = color;
     this.opacity = 1;
+    this.fades = fades;
   }
 
   draw() {
@@ -266,7 +267,7 @@ class Particule {
   update() {
     this.position.x += this.velocity.x;
     this.position.y += this.velocity.y;
-    if (this.opacity > 0) {
+    if (this.opacity > 0 && this.fades) {
       this.opacity -= 0.01;
     }
     this.draw();
@@ -315,7 +316,7 @@ const animationLoop = () => {
   // et si la longueur des ennemis de la grille est supérieure à 0. Si c'est le cas, il tire un missile.
   grids.forEach((grid, indexGrid) => {
     grid.update();
-    if (frames % 300 === 0 && grid.invaders.length > 0) {
+    if (frames % 200 === 0 && grid.invaders.length > 0) {
       grid.invaders[Math.floor(Math.random() * grid.invaders.length)].shoot(
         alienMissiles
       );
@@ -344,8 +345,9 @@ const animationLoop = () => {
                   x: (Math.random() - 0.5) * 2,
                   y: (Math.random() - 0.5) * 2,
                 },
-                radius: Math.random() * 5 + 1,
+                radius: Math.random() * 3,
                 color: "green",
+                fades: true,
               })
             );
           }
@@ -356,6 +358,7 @@ const animationLoop = () => {
             const missileFound = missiles.find(
               (missile2) => missile2 === missile
             );
+
             if (invaderFound && missileFound) {
               grid.invaders.splice(indexI, 1);
               missiles.splice(indexM, 1);
@@ -405,8 +408,9 @@ const animationLoop = () => {
               x: (Math.random() - 0.5) * 2,
               y: (Math.random() - 0.5) * 2,
             },
-            radius: Math.random() * 5,
-            color: "white",
+            radius: Math.random() * 3,
+            color: "#BDAA0DE",
+            fades: true,
           })
         );
       }
@@ -417,13 +421,18 @@ const animationLoop = () => {
   console.log(frames);
   if (frames % randomInterval === 0) {
     grids.push(new Grid());
-    randomInterval = Math.floor(Math.random() * 2000 + 500);
+    randomInterval = Math.floor(Math.random() * 3000 + 500);
     frames = 0;
     console.log(randomInterval);
   }
 
   // Suppression des particules du tableau lorsqu'elles ne sont plus visibles.
   particules.forEach((particule, index) => {
+    if (particule.position.y - particule.radius >= world.height) {
+      particule.position.x = Math.random() * world.width;
+      particule.position.y = Math.random() - particule.radius;
+    }
+
     if (particule.opacity <= 0) {
       particules.splice(index, 1);
     } else {
@@ -438,7 +447,11 @@ animationLoop();
 
 // Diminue le nombre de vie jusqu'a la défaite
 const lostLife = () => {
-  lifes--;
+  if (lifes--) {
+    document.getElementById("gameBoard").style.boxShadow =
+      "inset 0px 0px 50px 8px red";
+  }
+
   if (lifes <= 0) {
     alert("Perdu");
     init();
@@ -474,3 +487,21 @@ addEventListener("keyup", (event) => {
       player.shoot();
   }
 });
+
+// Crée le fond étoilé
+for (let i = 0; i < 100; i++) {
+  particules.push(
+    new Particule({
+      position: {
+        x: Math.random() * world.width,
+        y: Math.random() * world.height,
+      },
+      velocity: {
+        x: 0,
+        y: 0.3,
+      },
+      radius: Math.random() * 1.5,
+      color: "white",
+    })
+  );
+}
